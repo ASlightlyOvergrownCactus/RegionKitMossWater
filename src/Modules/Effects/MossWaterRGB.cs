@@ -80,6 +80,51 @@ namespace RegionKit.Modules.Effects
 			On.Water.InitiateSprites += Water_InitiateSprites;
 			On.Water.DrawSprites += Water_DrawSprites;
 			On.Water.AddToContainer += Water_AddToContainer;
+			On.BackgroundScene.Simple2DBackgroundIllustration.InitiateSprites += Simple2DBackgroundIllustrationOnInitiateSprites;
+		}
+
+		private static void Simple2DBackgroundIllustrationOnInitiateSprites(On.BackgroundScene.Simple2DBackgroundIllustration.orig_InitiateSprites orig, BackgroundScene.Simple2DBackgroundIllustration self, RoomCamera.SpriteLeaser sleaser, RoomCamera rcam)
+		{
+			orig(self, sleaser, rcam);
+			if (self.room.waterObject != null)
+			{
+				self.room.waterObject.slatedForDeletetion = true;
+				self.room.waterObject = null;
+				self.room.AddWater();
+			}
+		}
+		
+		private static void Water_InitiateSprites(On.Water.orig_InitiateSprites orig, Water self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)
+		{
+
+			orig(self, sLeaser, rCam);
+			int index = 0;
+			if (self.room.roomSettings.GetEffect(_Enums.MossWaterRGB) != null)
+			{
+				index = sLeaser.sprites.Length;
+				Array.Resize(ref sLeaser.sprites, sLeaser.sprites.Length + 1);
+
+				TriangleMesh.Triangle[] tris = new TriangleMesh.Triangle[self.pointsToRender * 2 * (vertsPerColumn - 1)];
+				int triIndex = 0;
+				for (int column = 0; column < self.pointsToRender; column++)
+				{
+					int firstVertex = column * vertsPerColumn;
+
+					for (int row = 0; row < vertsPerColumn - 1; row++)
+					{
+						int i = firstVertex + row;
+						tris[triIndex++] = new TriangleMesh.Triangle(i, i + 1, i + 1 + vertsPerColumn);
+						tris[triIndex++] = new TriangleMesh.Triangle(i, i + 1 + vertsPerColumn, i + vertsPerColumn);
+					}
+				}
+				sLeaser.sprites[index] = new TriangleMesh("Futile_White", tris, true)
+				{
+					data = mossRGBSprite,
+					shader = self.room.game.rainWorld.Shaders["MossWaterRGB"]
+				};
+
+				self.AddToContainer(sLeaser, rCam, null);
+			}
 		}
 
 		internal static void Undo()
@@ -131,39 +176,6 @@ namespace RegionKit.Modules.Effects
 			}
 		}
 
-		private static void Water_InitiateSprites(On.Water.orig_InitiateSprites orig, Water self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam)
-		{
-
-			orig(self, sLeaser, rCam);
-			int index = 0;
-			if (self.room.roomSettings.GetEffect(_Enums.MossWaterRGB) != null)
-			{
-				index = sLeaser.sprites.Length;
-				Array.Resize(ref sLeaser.sprites, sLeaser.sprites.Length + 1);
-
-				TriangleMesh.Triangle[] tris = new TriangleMesh.Triangle[self.pointsToRender * 2 * (vertsPerColumn - 1)];
-				int triIndex = 0;
-				for (int column = 0; column < self.pointsToRender; column++)
-				{
-					int firstVertex = column * vertsPerColumn;
-
-					for (int row = 0; row < vertsPerColumn - 1; row++)
-					{
-						int i = firstVertex + row;
-						tris[triIndex++] = new TriangleMesh.Triangle(i, i + 1, i + 1 + vertsPerColumn);
-						tris[triIndex++] = new TriangleMesh.Triangle(i, i + 1 + vertsPerColumn, i + vertsPerColumn);
-					}
-				}
-				sLeaser.sprites[index] = new TriangleMesh("Futile_White", tris, true)
-				{
-					data = mossRGBSprite,
-					shader = self.room.game.rainWorld.Shaders["MossWaterRGB"]
-				};
-
-				self.AddToContainer(sLeaser, rCam, null);
-			}
-		}
-
 		private static void Water_DrawSprites(On.Water.orig_DrawSprites orig, Water self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
 		{
 			orig(self, sLeaser, rCam, timeStacker, camPos);
@@ -189,6 +201,10 @@ namespace RegionKit.Modules.Effects
 						}
 					}
 				}
+			}
+			if (self.slatedForDeletetion || self.room != rCam.room)
+			{
+				sLeaser.CleanSpritesAndRemove();
 			}
 		}
 	}
