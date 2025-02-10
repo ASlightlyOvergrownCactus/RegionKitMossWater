@@ -53,7 +53,11 @@ public static class _Enums
 	/// </summary>
 	public static RoomSettings.RoomEffect.Type HSLDisplaySnow = new(nameof(HSLDisplaySnow), true);
 	/// <summary>
-	/// FT dense fog
+	/// Effect category
+	/// </summary>
+	public static RoomSettings.RoomEffect.Type HSLEcho = new(nameof(HSLEcho), true);
+	/// <summary>
+	/// Effect category
 	/// </summary>
 	public static RoomSettings.RoomEffect.Type DenseFog = new(nameof(DenseFog), true);
 	/// <summary>

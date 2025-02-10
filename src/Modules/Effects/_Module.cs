@@ -25,12 +25,14 @@ public static class _Module
 		//IceWaterBuilder.__RegisterBuilder();
 		RGBElectricDeathBuilder.__RegisterBuilder();
 		HSLDisplaySnowBuilder.__RegisterBuilder();
+		HSLEchoBuilder.__RegisterBuilder();
 		MossWaterUnlit.MossLoadResources(rainworld);
 		MossWaterRGB.MossLoadResources(rainworld);
 		MurkyWater.MurkyWaterLoadResources(rainworld);
 		ReflectiveWater.ReflectiveLoadResources(rainworld);
 		RGBElectricDeath.REDLoadResources(rainworld);
 		HSLDisplaySnow.RDSLoadResources(rainworld);
+		HSLEcho.HEDLoadResources(rainworld);
 		AlphaLevelShaderLoader.AlphaLevelLoad(rainworld);
 		LegacyColoredSprite2.LegacyColoredSprite2Load(rainworld);
 	}
@@ -50,6 +52,7 @@ public static class _Module
 		IceWater.Apply();
 		RGBElectricDeath.Apply();
 		HSLDisplaySnow.Apply();
+		HSLEcho.Apply();
 		MurkyWater.Apply();
 		DenseFogHooks.Apply();
 		On.DevInterface.RoomSettingsPage.DevEffectGetCategoryFromEffectType += RoomSettingsPageDevEffectGetCategoryFromEffectType;
@@ -67,6 +70,7 @@ public static class _Module
 		IceWater.Undo();
 		RGBElectricDeath.Undo();
 		HSLDisplaySnow.Undo();
+		HSLEcho.Undo();
 		MurkyWater.Undo();
 		DenseFogHooks.Undo();
 		On.DevInterface.RoomSettingsPage.DevEffectGetCategoryFromEffectType -= RoomSettingsPageDevEffectGetCategoryFromEffectType;

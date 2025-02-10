@@ -88,7 +88,7 @@ namespace RegionKit.Modules.Effects
 			orig(self, sleaser, rcam);
 			if (self.room.waterObject != null)
 			{
-				self.room.waterObject.slatedForDeletetion = true;
+				self.room.waterObject.slatedForDeletetion = true; // Thx to hootis for helpin' with this fix, put this thx later in proper code spot
 				self.room.waterObject = null;
 				self.room.AddWater();
 			}
