@@ -13,6 +13,10 @@ public static class _Enums
 	public static RoomSettings.RoomEffect.Type FogOfWarDarkened = new(nameof(FogOfWarDarkened), false); //disabled
 
 	/// <summary>
+	/// ReplaceCorruptionColor
+	/// </summary>
+	public static RoomSettings.RoomEffect.Type ReplaceCorruptionColor = new(nameof(ReplaceCorruptionColor), true);
+	/// <summary>
 	/// ReplaceEffectColorA
 	/// </summary>
 	public static RoomSettings.RoomEffect.Type ReplaceEffectColorA = new(nameof(ReplaceEffectColorA), true);
@@ -35,7 +39,7 @@ public static class _Enums
 	/// <summary>
 	/// Effect category
 	/// </summary>
-	public static RoomSettings.RoomEffect.Type IceWater = new(nameof(IceWater), true);
+	public static RoomSettings.RoomEffect.Type IceWater = new(nameof(IceWater), false); // TODO: set to true when working on again
 	/// <summary>
 	/// Effect category
 	/// </summary>
@@ -51,13 +55,17 @@ public static class _Enums
 	/// <summary>
 	/// Effect category
 	/// </summary>
-	public static RoomSettings.RoomEffect.Type HSLDisplaySnow = new(nameof(HSLDisplaySnow), true);
+	public static RoomSettings.RoomEffect.Type Suffocation = new(nameof(Suffocation), true);
 	/// <summary>
 	/// Effect category
 	/// </summary>
-	public static RoomSettings.RoomEffect.Type HSLEcho = new(nameof(HSLEcho), true);
+	public static RoomSettings.RoomEffect.Type RainSiren = new(nameof(RainSiren), true);
 	/// <summary>
 	/// Effect category
+	/// </summary>
+	public static RoomSettings.RoomEffect.Type HSLDisplaySnow = new(nameof(HSLDisplaySnow), true);
+	/// <summary>
+	/// FT dense fog
 	/// </summary>
 	public static RoomSettings.RoomEffect.Type DenseFog = new(nameof(DenseFog), true);
 	/// <summary>
@@ -68,6 +76,9 @@ public static class _Enums
 	/// FT dense fog sound
 	/// </summary>
 	public static SoundID FT_Fog_PreDeath = new(nameof(FT_Fog_PreDeath), true);
+
+
+
 	/// <summary>
 	/// Effect category
 	/// </summary>

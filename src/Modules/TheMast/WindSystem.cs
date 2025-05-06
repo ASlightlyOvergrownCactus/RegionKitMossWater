@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
-using DevInterface;
-using RWCustom;
-using UnityEngine;
+﻿using DevInterface;
 using Random = UnityEngine.Random;
 
 //Made by Slime_Cubed and Doggo
 namespace RegionKit.Modules.TheMast
 {
-
 	internal static class WindSystem
 	{
 		public static void Apply()
@@ -320,27 +314,35 @@ namespace RegionKit.Modules.TheMast
 
 			public override void FromString(string s)
 			{
-				base.FromString(s);
-				if (unrecognizedAttributes.Length >= 1 && float.TryParse(unrecognizedAttributes[0], out float velocity))
-					this.velocity = velocity;
 				try
 				{
-					if (unrecognizedAttributes.Length >= 2)
+					base.FromString(s);
+					if (unrecognizedAttributes.Length >= 1 && float.TryParse(unrecognizedAttributes[0], out float velocity))
+						this.velocity = velocity;
+					try
 					{
-						AffectGroup ag = (AffectGroup)Enum.Parse(typeof(AffectGroup), unrecognizedAttributes[1]);
-						affectGroup = ag;
+						if (unrecognizedAttributes.Length >= 2)
+						{
+							AffectGroup ag = (AffectGroup)Enum.Parse(typeof(AffectGroup), unrecognizedAttributes[1]);
+							affectGroup = ag;
+						}
 					}
+					catch (Exception) { }
+					try
+					{
+						if (unrecognizedAttributes.Length >= 3)
+						{
+							VertGroup ag = (VertGroup)Enum.Parse(typeof(VertGroup), unrecognizedAttributes[2]);
+							vertGroup = ag;
+						}
+					}
+					catch (Exception) { }
 				}
-				catch (Exception) { }
-				try
+				catch (Exception e)
 				{
-					if (unrecognizedAttributes.Length >= 3)
-					{
-						VertGroup ag = (VertGroup)Enum.Parse(typeof(VertGroup), unrecognizedAttributes[2]);
-						vertGroup = ag;
-					}
+					// Heat ducts causes this
+					LogError(e);
 				}
-				catch (Exception) { }
 			}
 
 			public override string ToString()
@@ -358,15 +360,27 @@ namespace RegionKit.Modules.TheMast
 
 		public class WindControlPanel : Panel, IDevUISignals
 		{
+			private FSprite lineSprite;
 			public WindControlPanel(DevUI owner, string IDstring, DevUINode parentNode, Vector2 pos) : base(owner, IDstring, parentNode, pos, new Vector2(250f, 50f), "Wind Area")
 			{
 				subNodes.Add(new WindStrengthSlider(owner, "Wind_Strength", this, new Vector2(5f, 5f), "Velocity"));
 				subNodes.Add(new WindAffectGroupCycler(owner, "Wind_Affect_Group", this, new Vector2(55f, 25f), 60f));
 				subNodes.Add(new WindVertGroupCycler(owner, "Wind_Vert_Group", this, new Vector2(175f, 25f), 70f));
+				fSprites.Add(lineSprite = new FSprite("pixel", true) { anchorY = 0f });
+				owner.placedObjectsContainer.AddChild(lineSprite);
 			}
 
 			public void Signal(DevUISignalType type, DevUINode sender, string message)
 			{
+			}
+
+			public override void Refresh()
+			{
+				base.Refresh();
+				Vector2 parentPos = (parentNode as QuadObjectRepresentation)!.absPos;
+				lineSprite.SetPosition(parentPos + Vector2.one * 0.01f);
+				lineSprite.scaleY = pos.magnitude;
+				lineSprite.rotation = Custom.AimFromOneVectorToAnother(parentPos, absPos);
 			}
 
 			private class WindAffectGroupCycler : Button
