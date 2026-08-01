@@ -32,7 +32,7 @@ internal static class MoreFadePalettes
 
 	public static FadePalette GetMoreFade(this RoomSettings rs, int index)
 	{
-		if (index < 0) throw new IndexOutOfRangeException("Palette infex below zero");
+		if (index < 0) throw new IndexOutOfRangeException("Palette index below zero");
 
 		if (rs.AllFadePalettes().Count > index && rs.AllFadePalettes()[index] != null)
 		{ return rs.AllFadePalettes()[index]; }
@@ -45,7 +45,7 @@ internal static class MoreFadePalettes
 
 	public static void SetMoreFade(this RoomSettings rs, int index, FadePalette palette)
 	{
-		if (index < 0) throw new IndexOutOfRangeException("Palette infex below zero");
+		if (index < 0) throw new IndexOutOfRangeException("Palette index below zero");
 		if (rs.AllFadePalettes().Count > index)
 		{
 			rs.AllFadePalettes()[index] = palette;
@@ -56,9 +56,16 @@ internal static class MoreFadePalettes
 		}
 	}
 
+	public static int AddMoreFade(this RoomSettings rs, FadePalette palette)
+	{
+		List<FadePalette> allFadePalettes = rs.AllFadePalettes();
+		allFadePalettes.Add(palette);
+		return allFadePalettes.Count - 1;
+	}
+
 	public static void DeleteMoreFade(this RoomSettings rs, int index)
 	{
-		if (index < 0) throw new IndexOutOfRangeException("Palette infex below zero");
+		if (index < 0) throw new IndexOutOfRangeException("Palette index below zero");
 		if (rs.AllFadePalettes().Count > index && index >= 0)
 		{
 			rs.AllFadePalettes().RemoveAt(index);
@@ -94,8 +101,15 @@ internal static class MoreFadePalettes
 		else { return null!; }
 	}
 
+	public static void RefreshMoreFade(this RoomCamera self)
+	{
+		if (self.room?.roomSettings == null) return;
+		ChangeMoreFade(self, self.room.roomSettings.GetAllFades());
+	}
+
 	public static void ChangeMoreFade(this RoomCamera self, FadePalette[] newFades)
 	{
+		if (self.room?.roomSettings == null) return;
 		self.ClearMoreFadeTextures();
 		foreach (FadePalette fade in newFades)
 		{
@@ -124,6 +138,11 @@ internal static class MoreFadePalettes
 		_CommonHooks.RoomSettingsSave += _CommonHooks_RoomSettingsSave;
 		On.DevInterface.RoomSettingsPage.ctor += RoomSettingsPage_ctor;
 		On.RainWorldGame.ShutDownProcess += RainWorldGame_ShutDownProcess;
+
+		On.DevInterface.PaletteController.Refresh += PaletteEffectSelectorText;
+		On.DevInterface.PaletteController.Increment += IncrementRefreshPalette;
+		On.RoomCamera.ApplyEffectColorsToPaletteTexture += PaletteEffectColorHook;
+		On.DevInterface.RoomSettingsPage.Signal += EffectReloadHook;
 	}
 
 	public static void Undo()
@@ -137,6 +156,11 @@ internal static class MoreFadePalettes
 		_CommonHooks.RoomSettingsSave -= _CommonHooks_RoomSettingsSave;
 		On.DevInterface.RoomSettingsPage.ctor -= RoomSettingsPage_ctor;
 		On.RainWorldGame.ShutDownProcess -= RainWorldGame_ShutDownProcess;
+
+		On.DevInterface.PaletteController.Refresh -= PaletteEffectSelectorText;
+		On.DevInterface.PaletteController.Increment -= IncrementRefreshPalette;
+		On.RoomCamera.ApplyEffectColorsToPaletteTexture -= PaletteEffectColorHook;
+		On.DevInterface.RoomSettingsPage.Signal -= EffectReloadHook;
 	}
 
 	private static void RainWorldGame_ShutDownProcess(On.RainWorldGame.orig_ShutDownProcess orig, RainWorldGame self)
@@ -179,7 +203,132 @@ internal static class MoreFadePalettes
 					Color origColor = self.paletteTexture.GetPixel(i, j - 8);
 					var newColor = Color.Lerp(fadeTex.GetPixel(i, j), fadeTex.GetPixel(i, j - 8), self.fadeCoord.y);
 					if (fade.fades.Length > self.currentCameraPosition) //we're not throwing, even if it'll fail to render the fade
-					{ self.paletteTexture.SetPixel(i, j - 8, Color.Lerp(origColor, newColor, fade.fades[self.currentCameraPosition])); }
+					{ 
+						self.paletteTexture.SetPixel(i, j - 8, Color.Lerp(origColor, newColor, fade.fades[self.currentCameraPosition]));
+					}
+				}
+			}
+		}
+	}
+	public static RoomSettings.RoomEffect.Type PaletteEffectColorA = new("PaletteEffectColorA", true);
+	public static RoomSettings.RoomEffect.Type PaletteEffectColorB = new("PaletteEffectColorB", true);
+
+	private static void PaletteEffectColorHook(On.RoomCamera.orig_ApplyEffectColorsToPaletteTexture orig, RoomCamera self, ref Texture2D texture, int color1, int color2)
+	{
+		// Fix for effect color crash
+		int colorCount = Convert.ToInt32(Math.Floor(RoomCamera.allEffectColorsTexture.width / 2.0)) - 1;
+
+		if (color1 > colorCount)
+		{
+			color1 = -1;
+		}
+		if (color2 > colorCount)
+		{
+			color2 = -1;
+		}
+
+		RoomSettings.RoomEffect? roomEffect = self.room?.roomSettings.GetEffect(PaletteEffectColorA);
+		if (roomEffect != null)
+		{
+			color1 = -1;
+		}
+		roomEffect = self.room?.roomSettings.GetEffect(PaletteEffectColorB);
+		if (roomEffect != null)
+		{
+			color2 = -1;
+		}
+
+		orig(self, ref texture, color1, color2);
+	}
+
+	private static bool PalleteHasEffectColor(ref Texture2D texture, int effectColorOffset)
+	{
+
+		Color[] pixels = Enumerable.Concat(texture.GetPixels(30, effectColorOffset, 2, 2), texture.GetPixels(30, effectColorOffset + 8, 2, 2)).ToArray();
+
+		for (int i = 0; i < pixels.Length; i++)
+		{
+			if (pixels[i] != Color.white)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	// This code is fucking rancid
+	private static void FadeEffectColor(RoomCamera self, int effectColorOffset)
+	{
+		Texture2D effColTex = new Texture2D(2, 4);
+		effColTex.SetPixels([Color.black, Color.black, Color.black, Color.black, Color.black, Color.black, Color.black, Color.black]);
+
+		// Get all used palettes and fades
+		List<Texture2D> palettes = [self.fadeTexA];
+		List<double> fadeStrengths = [1.0];
+
+		if (self.paletteB > -1)
+		{
+			palettes.Add(self.fadeTexB);
+			fadeStrengths.Add(self.paletteBlend);
+		}
+
+		if (self.MoreFadeTextures().Keys.Count > 0)
+		{
+			foreach (FadePalette fade in self.MoreFadeTextures().Keys.ToList())
+			{
+				if (fade != null && fade.palette != -1)
+				{
+					palettes.Add(self.MoreFadeTextures()[fade]);
+					fadeStrengths.Add(fade.fades[self.currentCameraPosition]);
+				}
+			}
+		}
+
+		// Do the mixing
+		for (int i = 0; i < palettes.Count; i++)
+		{
+			Texture2D texture = palettes[i];
+			double fadeStrenth = fadeStrengths[i];
+
+			if (PalleteHasEffectColor(ref texture, effectColorOffset))
+			{
+				Color[] pixelsA = effColTex.GetPixels();
+				Color[] pixelsB = Enumerable.Concat(texture.GetPixels(30, effectColorOffset, 2, 2), texture.GetPixels(30, effectColorOffset + 8, 2, 2)).ToArray();
+				Color[] PixelsOut = new Color[8];
+
+				for (int j = 0; j < pixelsA.Length; j++)
+				{
+					PixelsOut[j] = Color.Lerp(pixelsA[j], pixelsB[j], (float)fadeStrenth);
+				}
+
+				effColTex.SetPixels(PixelsOut);
+			}
+
+			texture.SetPixels(30, effectColorOffset, 2, 2, effColTex.GetPixels(0, 0, 2, 2));
+			texture.SetPixels(30, effectColorOffset + 8, 2, 2, effColTex.GetPixels(0, 2, 2, 2));
+
+			palettes[i] = texture;
+		}
+
+		// Override old textures
+		self.fadeTexA = palettes[0];
+
+		if (self.paletteB > -1)
+		{
+			self.fadeTexB = palettes[1];
+		}
+
+		int outi = 1 + Convert.ToInt16(self.paletteB > -1);
+
+		if (self.MoreFadeTextures().Keys.Count > 0)
+		{
+			foreach (FadePalette fade in self.MoreFadeTextures().Keys.ToList())
+			{
+				if (fade != null && fade.palette != -1)
+				{
+					self.MoreFadeTextures()[fade] = palettes[outi];
+					outi++;
 				}
 			}
 		}
@@ -199,6 +348,23 @@ internal static class MoreFadePalettes
 				}
 			}
 		}
+
+		// Custom effect color fading stuff
+		RoomSettings.RoomEffect? roomEffect = self.room?.roomSettings.GetEffect(PaletteEffectColorA);
+		if (roomEffect != null)
+		{
+			FadeEffectColor(self, 4); 
+			self.LoadPalette(self.room!.roomSettings.Palette, ref self.fadeTexA);
+			self.LoadPalette(self.room.roomSettings.fadePalette.palette, ref self.fadeTexB);
+		}
+		roomEffect = self.room?.roomSettings.GetEffect(PaletteEffectColorB);
+		if (roomEffect != null)
+		{
+			FadeEffectColor(self, 2);
+			self.LoadPalette(self.room!.roomSettings.Palette, ref self.fadeTexA);
+			self.LoadPalette(self.room.roomSettings.fadePalette.palette, ref self.fadeTexB);
+		}
+
 		orig(self, color1, color2);
 	}
 
@@ -207,7 +373,11 @@ internal static class MoreFadePalettes
 		self.currentCameraPosition = cameraPosition; //THIS IS REALLY IMPORTANT idk why the base game doesn't do this, shouldn't break anything
 
 		self.ClearMoreFadeTextures();
-		if (newRoom == null) { orig(self, newRoom, cameraPosition); return; }
+		if (newRoom == null) 
+		{ 
+			orig(self, newRoom, cameraPosition); 
+			return; 
+		}
 		foreach (FadePalette fade in newRoom.roomSettings.GetAllFades())
 		{
 			Texture2D moreTex = null!;
@@ -238,9 +408,13 @@ internal static class MoreFadePalettes
 		for (int i = 0; i <= greatest; i++)
 		{
 			if (moreFadeIndex.ContainsKey(i))
-			{ self.AllFadePalettes().Add(moreFadeIndex[i]); }
+			{ 
+				self.AllFadePalettes().Add(moreFadeIndex[i]); 
+			}
 			else
-			{ self.AllFadePalettes().Add(null!); }
+			{ 
+				self.AllFadePalettes().Add(null!); 
+			}
 		}
 
 		return true;
@@ -273,11 +447,6 @@ internal static class MoreFadePalettes
 	{
 		orig(self, owner, IDstring, parentNode, name);
 		self.subNodes.Add(new MoreFadeDevPanel(owner, self, new Vector2(450f, 360f), self.RoomSettings.GetAllFades().Count() - 1));
-		return;
-		for (int i = 0; i < self.RoomSettings.GetAllFades().Length; i++)
-		{
-			self.subNodes.Add(new MoreFadeDevPanel(owner, self, new Vector2(250f + 210f * i, 190f), i));
-		}
 	}
 	#endregion
 
@@ -288,12 +457,22 @@ internal static class MoreFadePalettes
 	#region devUI
 	public class MoreFadeDevPanel : Panel, IDevUISignals
 	{
+		public static readonly int SlidersPerSubpage = 20;
+
 		public int index;
+		public int screensPage = 0;
+		public int screensTotalPages = 0;
 		public int camCount => owner.room.cameraPositions.Length;
 		public FadePalette GetFade => RoomSettings.GetMoreFade(index);
 		public MoreFadeDevPanel(DevUI owner, DevUINode parentNode, Vector2 pos, int index) : base(owner, $"MoreFade_{index}", parentNode, pos, new Vector2(210f, 25f + 20f * owner.room.cameraPositions.Length), $"Fade Palette: {(index == -1 ? "None" : +2)}")
 		{
 			this.index = index;
+
+			if (camCount > SlidersPerSubpage)
+			{
+				size.y = 45f + 20f * SlidersPerSubpage;
+				screensTotalPages = (camCount + SlidersPerSubpage - 1) / SlidersPerSubpage;
+			}
 
 			RefreshSubnodes();
 		}
@@ -304,19 +483,27 @@ internal static class MoreFadePalettes
 			if (index == -1) Title = "Fade Palette: None";
 
 			for (int i = subNodes.Count - 1; i >= 0; i--)
-			{ subNodes[i].ClearSprites(); }
+			{ 
+				subNodes[i].ClearSprites(); 
+			}
 			subNodes.Clear();
 
 			float height = 25f;
 			height += 40f;
 			if (index != -1)
-			{ height += 20f + camCount * 20f; }
+			{ 
+				height += 20f + Math.Min(camCount, SlidersPerSubpage) * 20f;
+				if (camCount > SlidersPerSubpage)
+				{
+					height += 25f;
+				}
+			}
 
 			Resize(new Vector2(210f, height));
 
-			if (pos.y + height > 700f)
+			if (pos.y + height > 660f)
 			{
-				Move(new Vector2(pos.x, 700f - height));
+				Move(new Vector2(pos.x, 660f - height));
 			}
 
 			height -= 20f;
@@ -324,7 +511,7 @@ internal static class MoreFadePalettes
 			subNodes.Add(new Button(owner, "Add_New", this, new Vector2(5f, height), 90f, "Add New"));
 
 			height -= 20f;
-			if (RoomSettings.GetAllFades().Count() > (index == -1 ? 0 : 0))
+			if (RoomSettings.GetAllFades().Count() > 0)
 			{
 				subNodes.Add(new Button(owner, "Move_Prev", this, new Vector2(5f, height), 90f, "Prev"));
 				subNodes.Add(new Button(owner, "Move_Next", this, new Vector2(105f, height), 90f, "Next"));
@@ -339,15 +526,32 @@ internal static class MoreFadePalettes
 			subNodes.Add(new MorePaletteFadeController(owner, IDstring + "_FadePalette", this, new Vector2(5f, height), "Fade Palette: "));
 			for (int i = 0; i < camCount; i++)
 			{
-				height -= 20f;
-				subNodes.Add(new MorePaletteFadeSlider(owner, IDstring + "_PaletteFadeSlider_" + i.ToString(), this, new Vector2(5f, height), "Screen " + i.ToString() + ": ", i));
+				int pageStart = screensPage * SlidersPerSubpage;
+				if (i >= pageStart && i < pageStart + SlidersPerSubpage)
+				{
+					height -= 20f;
+					subNodes.Add(new MorePaletteFadeSlider(owner, IDstring + "_PaletteFadeSlider_" + i.ToString(), this, new Vector2(5f, height), "Screen " + i.ToString() + ": ", i));
+				}
+			}
+
+			if (screensTotalPages > 1)
+			{
+				subNodes.Add(new Button(owner, "Screens_Prev", this, new Vector2(5f, 5f), 90f, "Prev Page"));
+				subNodes.Add(new Button(owner, "Screens_Next", this, new Vector2(105f, 5f), 90f, "Next Page"));
 			}
 		}
 
-		public void SwitchPages(int index)
+		public void SwitchPalettePage(int index)
 		{
 			if (index >= RoomSettings.GetAllFades().Count() || index < 0) return;
 			this.index = index;
+			RefreshSubnodes();
+		}
+
+		public void SwitchScreenPage(int index)
+		{
+			if (index < 0 || index >= screensTotalPages) return;
+			screensPage = index;
 			RefreshSubnodes();
 		}
 
@@ -362,31 +566,39 @@ internal static class MoreFadePalettes
 
 		public void Signal(DevUISignalType type, DevUINode sender, string message)
 		{
-			LogMessage("signalis");
 			switch (sender.IDstring)
 			{
-			case "Add_New":
-				RoomSettings.SetMoreFade(RoomSettings.GetAllFades().Count(), new FadePalette(0, camCount));
-				index = RoomSettings.GetAllFades().Count() - 1;
-				RefreshSubnodes();
-				break;
-			case "Delete":
-				RoomSettings.DeleteMoreFade(index);
-				index = Mathf.Max(0, index - 1);
-				if (RoomSettings.GetAllFades().Count() <= 0)
-				{
-					index = -1;
+				case "Add_New":
+					RoomSettings.SetMoreFade(RoomSettings.GetAllFades().Count(), new FadePalette(0, camCount));
+					index = RoomSettings.GetAllFades().Count() - 1;
 					RefreshSubnodes();
-				}
-				else { SwitchPages(index); }
-				owner.room.game.cameras[0].ChangeMoreFade(RoomSettings.GetAllFades());
-				break;
-			case "Move_Prev":
-				SwitchPages(index - 1);
-				break;
-			case "Move_Next":
-				SwitchPages(index + 1);
-				break;
+					break;
+				case "Delete":
+					RoomSettings.DeleteMoreFade(index);
+					index = Mathf.Max(0, index - 1);
+					if (RoomSettings.GetAllFades().Count() <= 0)
+					{
+						index = -1;
+						RefreshSubnodes();
+					}
+					else 
+					{ 
+						SwitchPalettePage(index);
+					}
+					owner.room.game.cameras[0].ChangeMoreFade(RoomSettings.GetAllFades());
+					break;
+				case "Move_Prev":
+					SwitchPalettePage(index - 1);
+					break;
+				case "Move_Next":
+					SwitchPalettePage(index + 1);
+					break;
+				case "Screens_Prev":
+					SwitchScreenPage(screensPage - 1);
+					break;
+				case "Screens_Next":
+					SwitchScreenPage(screensPage + 1);
+					break;
 			}
 		}
 	}
@@ -454,6 +666,8 @@ internal static class MoreFadePalettes
 			}
 			NumberText = ((int)(FadePanel.GetFade.fades[index] * 100f)).ToString() + "%";
 			RefreshNubPos(FadePanel.GetFade.fades[index]);
+
+			ReloadPalettes(owner, RoomSettings);
 		}
 
 		public override void NubDragged(float nubPos)
@@ -472,5 +686,74 @@ internal static class MoreFadePalettes
 
 		public int index;
 	}
+
+	private static void IncrementRefreshPalette(On.DevInterface.PaletteController.orig_Increment orig, PaletteController self, int change)
+	{
+		orig(self, change);
+
+		ReloadPalettes(self.owner, self.RoomSettings);
+
+		self.Refresh();
+	}
+
+	// Warn of invalid effect color & Palette Override
+	private static void PaletteEffectSelectorText(On.DevInterface.PaletteController.orig_Refresh orig, PaletteController self)
+	{
+		orig(self);
+
+		int colorCount = Convert.ToInt32(Math.Floor(RoomCamera.allEffectColorsTexture.width / 2.0)) - 1;
+
+		switch (self.controlPoint)
+		{
+		case 1:
+			if (self.RoomSettings.EffectColorA > colorCount)
+			{
+				self.NumberLabelText = "ERR";
+			}
+
+			RoomSettings.RoomEffect roomEffect = self.RoomSettings.GetEffect(PaletteEffectColorA);
+			if (roomEffect != null)
+			{
+				self.NumberLabelText = "PAL";
+			}
+
+			break;
+		case 2:
+			if (self.RoomSettings.EffectColorB > colorCount)
+			{
+				self.NumberLabelText = "ERR";
+			}
+
+			roomEffect = self.RoomSettings.GetEffect(PaletteEffectColorB);
+			if (roomEffect != null)
+			{
+				self.NumberLabelText = "PAL";
+			}
+
+			break;
+		}
+	}
+
+	private static void EffectReloadHook(On.DevInterface.RoomSettingsPage.orig_Signal orig, RoomSettingsPage self, DevUISignalType type, DevUINode sender, string message)
+	{
+		orig(self, type, sender, message);
+
+		ReloadPalettes(self.owner, self.RoomSettings);
+	}
+
+	private static void ReloadPalettes(DevUI owner, RoomSettings roomSettings)
+	{
+		owner.game.cameras[0].LoadPalette(roomSettings.Palette, ref owner.game.cameras[0].fadeTexA);
+
+		if (roomSettings.fadePalette is not null)
+		{
+			owner.game.cameras[0].LoadPalette(roomSettings.fadePalette.palette, ref owner.game.cameras[0].fadeTexB);
+		}
+
+		owner.game.cameras[0].ChangeMoreFade(roomSettings.GetAllFades());
+
+		owner.game.cameras[0].ApplyEffectColorsToAllPaletteTextures(roomSettings.EffectColorA, roomSettings.EffectColorB);
+	}
+	
 	#endregion
 }

@@ -66,4 +66,31 @@ public class BorderTpData : ManagedData
 	{
 	}
 }
+
+public class ColoredSSFusesData : ManagedData
+{
+	public IntVector2 HandlePos => GetValue<IntVector2>("handle");
+	public Color ActiveColor => GetValue<Color>("activeCol");
+	public Color BrokenColor => GetValue<Color>("brokenCol");
+	public float BrokenAmt => GetValue<float>("broken");
+	public float Depth => GetValue<float>("depth");
+
+	public IntVector2 TilePos => Room.StaticGetTilePosition(owner.pos);
+	public IntRect Rect => new IntRect(
+		Mathf.Min(TilePos.x, TilePos.x + HandlePos.x),
+		Mathf.Min(TilePos.y, TilePos.y + HandlePos.y),
+		Mathf.Max(TilePos.x, TilePos.x + HandlePos.x),
+		Mathf.Max(TilePos.y, TilePos.y + HandlePos.y));
+
+	public ColoredSSFusesData(PlacedObject owner) : base(owner,
+	[
+		new IntVector2Field("handle", 3, 3, IntVector2Field.IntVectorReprType.rect),
+		new ColorField("activeCol", Color.blue, ManagedFieldWithPanel.ControlType.button, displayName: "Active color"),
+		new ColorField("brokenCol", Color.red, ManagedFieldWithPanel.ControlType.button, displayName: "Broken color"),
+		new FloatField("broken", 0f, 1f, 0f, 0.01f, displayName: "Broken amount"),
+		new FloatField("depth", 0f, 30f, 0f, 0f, displayName: "Depth"),
+	])
+	{
+	}
+}
 #pragma warning restore 1591

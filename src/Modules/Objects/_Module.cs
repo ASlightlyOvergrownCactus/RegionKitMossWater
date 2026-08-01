@@ -1,7 +1,7 @@
-﻿using MonoMod.RuntimeDetour;
-using DevInterface;
-using MonoMod.Cil;
-using Mono.Cecil.Cil;
+﻿using DevInterface;
+using MonoMod.RuntimeDetour;
+using RegionKit.API;
+using RegionKit.Modules.Objects.AdvancedShaderController;
 
 namespace RegionKit.Modules.Objects;
 ///<inheritdoc/>
@@ -59,8 +59,8 @@ public static class _Module
 
 		RegisterManagedObject<ShortcutCannon, shortcutCannonData, ShortcutCannonRepresentation>("ShortcutCannon", GAMEPLAY_POM_CATEGORY);
 		RegisterManagedObject<CameraNoise, CameraNoise.CameraNoiseData, ManagedRepresentation>("CameraNoise", DECORATIONS_POM_CATEGORY);
-        RegisterManagedObject<SlugcatEyeSelector, SlugcatEyeSelectorData, ManagedRepresentation>("SlugcatEyeSelector", DECORATIONS_POM_CATEGORY);
-        RegisterFullyManagedObjectType(
+		RegisterManagedObject<SlugcatEyeSelector, SlugcatEyeSelectorData, ManagedRepresentation>("SlugcatEyeSelector", DECORATIONS_POM_CATEGORY);
+		RegisterFullyManagedObjectType(
 			[
 				new IntegerField("reqkarma", 0, 9, 0, displayName:"Req Karma"),
 				new IntegerField("reqkarmacap", 0, 9, 9, displayName:"Req Karma Cap"),
@@ -89,44 +89,59 @@ public static class _Module
 
 		RegisterFullyManagedObjectType(
 		[
-			new IntVector2Field("0zone", new(1, 1), IntVector2Field.IntVectorReprType.rect), 
-			new FloatField("1traction", 0f, 1f, 1f, displayName:"Traction", increment: 0.02f), 
-			new BooleanField("2slope", false, displayName:"slippery slopes"), 
-			new BooleanField("3tunnel", false, displayName:"no tunnel crawl") 
+			new IntVector2Field("0zone", new(1, 1), IntVector2Field.IntVectorReprType.rect),
+			new FloatField("1traction", 0f, 1f, 1f, displayName:"Traction", increment: 0.02f),
+			new BooleanField("2slope", false, displayName:"slippery slopes"),
+			new BooleanField("3tunnel", false, displayName:"no tunnel crawl")
 		], typeof(SlipperyZone), "SlipperyZone", GAMEPLAY_POM_CATEGORY);
+
+		RegisterManagedObject<ColoredSSFuses, ColoredSSFusesData, ManagedRepresentation>(_Enums.ColoredSSFuses.value, DECORATIONS_POM_CATEGORY);
 	}
 
 	internal static void Enable()
 	{
 		//TODO: make unapplies?
-		foreach (var hk in __objectHooks) if (!hk.IsApplied) hk.Apply();
-		On.PlacedObject.GenerateEmptyData += MakeEmptyData;
-		On.DevInterface.ObjectsPage.CreateObjRep += CreateObjectReps;
-		On.DevInterface.ObjectsPage.DevObjectGetCategoryFromPlacedType += ObjectsPageDevObjectGetCategoryFromPlacedType;
-		On.Room.NowViewed += Room_Viewed;
-		On.Room.NoLongerViewed += Room_NotViewed;
-		CustomEntranceSymbols.Apply();
-		ColoredLightBeam.Apply();
-		NoWallSlideZones.Apply();
-		RKAdditionalClimbables.Apply();
-		//todo: check if it's okay to have like this
-		_CommonHooks.PostRoomLoad += RoomPostLoad;
-		//On.RainWorld.LoadResources += LoadLittlePlanetResources;
-		ShortcutCannon.Apply();
-		SlugcatEyeSelector.Apply();
-		BigKarmaShrine.Apply();
-		CustomWallMycelia.Apply();
-		GuardProtectNode.Apply();
-		SlipperyZone.ApplyHooks();
-		WaterSpout.Apply();
-		FanLightHooks.Apply();
-		NoBatflyLurkZoneHooks.Apply();
-		NoDropwigPerchZoneHooks.Apply();
-		WaterFallDepthHooks.Apply();
+		try
+		{
+			foreach (var hk in __objectHooks) if (!hk.IsApplied) hk.Apply();
+			On.PlacedObject.GenerateEmptyData += MakeEmptyData;
+			On.DevInterface.ObjectsPage.CreateObjRep += CreateObjectReps;
+			On.DevInterface.ObjectsPage.DevObjectGetCategoryFromPlacedType += ObjectsPageDevObjectGetCategoryFromPlacedType;
+			On.Room.NowViewed += Room_Viewed;
+			On.Room.NoLongerViewed += Room_NotViewed;
+			CustomEntranceSymbols.Apply();
+			ColoredLightBeam.Apply();
+			NoWallSlideZones.Apply();
+			RKAdditionalClimbables.Apply();
+			//todo: check if it's okay to have like this
+			_CommonHooks.PostRoomLoad += RoomPostLoad;
+			//On.RainWorld.LoadResources += LoadLittlePlanetResources;
+			ShortcutCannon.Apply();
+			SlugcatEyeSelector.Apply();
+			BigKarmaShrine.Apply();
+			CustomWallMycelia.Apply();
+			GuardProtectNode.Apply();
+			SlipperyZone.ApplyHooks();
+			WaterSpout.Apply();
+			FanLightHooks.Apply();
+			NoBatflyLurkZoneHooks.Apply();
+			NoDropwigPerchZoneHooks.Apply();
+			WaterFallDepthHooks.Apply();
+			EvilDangleFruit.Apply();
+			ColoredSSFuses.Apply();
+			ColoredMudPit.Apply();
+			GreenSparksDir.Implementation.Apply();
 
-		LoadShaders();
+			_CompatHooks.Enable();
 
-		IL.DevInterface.ObjectsPage.AssembleObjectPages += RemoveDeprecatedObjects;
+			LoadShaders();
+		}
+		catch (Exception e)
+		{
+			LogError(e);
+		}
+
+		DeprecatedItems.RegisterDeprecatedObject("PlacedWaterfall");
 	}
 
 	internal static void Disable()
@@ -154,8 +169,12 @@ public static class _Module
 		NoBatflyLurkZoneHooks.Undo();
 		NoDropwigPerchZoneHooks.Undo();
 		WaterFallDepthHooks.Undo();
+		EvilDangleFruit.Undo();
+		ColoredSSFuses.Undo();
+		ColoredMudPit.Undo();
+		GreenSparksDir.Implementation.Undo();
 
-		IL.DevInterface.ObjectsPage.AssembleObjectPages -= RemoveDeprecatedObjects;
+		_CompatHooks.Disable();
 	}
 
 	private static ObjectsPage.DevObjectCategories ObjectsPageDevObjectGetCategoryFromPlacedType(On.DevInterface.ObjectsPage.orig_DevObjectGetCategoryFromPlacedType orig, ObjectsPage self, PlacedObject.Type type)
@@ -169,7 +188,13 @@ public static class _Module
 			|| type == _Enums.LittlePlanet
 			|| type == _Enums.FanLight
 			|| type == _Enums.PCPlayerSensitiveLightSource
-			|| type == _Enums.WaterFallDepth)
+			|| type == _Enums.WaterFallDepth
+			|| type == _Enums.BGFlatLight
+			|| type == _Enums.AdvancedShader
+			|| type == _Enums.BigWaterWheel
+			|| type == _Enums.GreenSparksDir
+			|| type == _Enums.ColoredLocalBlizzard
+			)
 			res = new ObjectsPage.DevObjectCategories(DECORATIONS_POM_CATEGORY);
 		else if (type == _Enums.NoWallSlideZone
 			|| type == _Enums.ClimbablePole
@@ -178,8 +203,12 @@ public static class _Module
 			|| type == TheMast._Enums.PlacedWind
 			|| type == TheMast._Enums.PlacedPearlChain
 			|| type == _Enums.NoBatflyLurkZone
-			|| type == _Enums.NoDropwigPerchZone)
+			|| type == _Enums.NoDropwigPerchZone
+			|| type == _Enums.ColoredMudPit
+			)
 			res = new ObjectsPage.DevObjectCategories(GAMEPLAY_POM_CATEGORY);
+		else if (type == _Enums.EvilDangleFruit)
+			res = ObjectsPage.DevObjectCategories.Consumable;
 		return res;
 	}
 
@@ -247,6 +276,24 @@ public static class _Module
 				case nameof(_Enums.WaterFallDepth):
 					self.AddObject(new WaterFallDepth(self, pObj));
 					break;
+				case nameof(_Enums.BGFlatLight):
+					self.AddObject(new BGFlatLight(pObj));
+					break;
+				case nameof(_Enums.AdvancedShader):
+					self.AddObject(new AdvancedShader(pObj));
+					break;
+				case nameof(_Enums.BigWaterWheel):
+					self.AddObject(new BigWaterWheel(pObj, self));
+					break;
+				case nameof(_Enums.ColoredMudPit):
+					self.AddObject(new MudPit(pObj));
+					break;
+				case nameof(_Enums.GreenSparksDir):
+					GreenSparksDir.AddOrRefresh(self);
+					break;
+				case nameof(_Enums.ColoredLocalBlizzard):
+					self.AddObject(new ColoredLocalBlizzard(pObj, (pObj.data as ColoredLocalBlizzard.Data)!));
+					break;
 			}
 			if (pObj.data is WormgrassRectData && !wormgrassDataFound)
 			{
@@ -309,6 +356,40 @@ public static class _Module
 			CreateObjectIfNeeded();
 			rep = new WaterFallDepthRepresentation(self.owner, tp.ToString() + "_Rep", self, pObj);
 		}
+		else if (tp == _Enums.EvilDangleFruit)
+		{
+			rep = new ConsumableRepresentation(self.owner, tp.ToString() + "_Rep", self, pObj, "Consumable: " + tp.ToString());
+		}
+		else if (tp == _Enums.BGFlatLight)
+		{
+			CreateObjectIfNeeded();
+			rep = new BGFlatLightRepresentation(self.owner, tp.ToString() + "_Rep", self, pObj);
+		}
+		else if (tp == _Enums.AdvancedShader)
+		{
+			CreateObjectIfNeeded();
+			rep = new AdvancedShaderRepresentation(self.owner, tp.ToString() + "_Rep", self, pObj);
+		}
+		else if (tp == _Enums.BigWaterWheel)
+		{
+			CreateObjectIfNeeded();
+			rep = new BigWaterWheelRepresentation(self.owner, tp.ToString() + "_Rep", self, pObj, tp.ToString());
+		}
+		else if (tp == _Enums.ColoredMudPit)
+		{
+			CreateObjectIfNeeded();
+			rep = new ColoredMudPit.ColoredMudPitRepresentation(self.owner, tp.ToString() + "_Rep", self, pObj, tp.ToString());
+		}
+		else if (tp == _Enums.GreenSparksDir)
+		{
+			CreateObjectIfNeeded();
+			rep = new GreenSparksDir.Representation(self.owner, tp.ToString() + "_Rep", self, pObj, tp.ToString());
+		}
+		else if (tp == _Enums.ColoredLocalBlizzard)
+		{
+			CreateObjectIfNeeded();
+			rep = new ColoredLocalBlizzard.Representation(self.owner, tp.ToString() + "_Rep", self, pObj, tp.ToString());
+		}
 
 		// Create object or call orig
 		if (rep != null)
@@ -327,12 +408,13 @@ public static class _Module
 		{
 			if (pObj == null)
 			{
+				var camPos = self.owner.room.game.cameras[0].pos;
 				pObj = new PlacedObject(tp, null)
 				{
 					// Prevent objects from accidentally going offscreen when you place them :steamhappy:
 					pos = Custom.RestrictInRect(
-						self.owner.room.game.cameras[0].pos + Vector2.Lerp(self.owner.mousePos, new Vector2(-683f, 384f), 0.25f) + Custom.DegToVec(UnityEngine.Random.value * 360f) * 0.2f,
-						new FloatRect(0f, 0f, 1366f, 768f))
+						camPos + Vector2.Lerp(self.owner.mousePos, new Vector2(-683f, 384f), 0.25f) + Custom.DegToVec(UnityEngine.Random.value * 360f) * 0.2f,
+						new FloatRect(camPos.x, camPos.y, camPos.x + 1366f, camPos.y + 768f))
 				};
 				self.RoomSettings.placedObjects.Add(pObj);
 				return true;
@@ -387,6 +469,35 @@ public static class _Module
 		{
 			self.data = new WaterFallDepth.WaterFallDepthData(self);
 		}
+		else if (self.type == _Enums.EvilDangleFruit)
+		{
+			self.data = new PlacedObject.ConsumableObjectData(self);
+		}
+		else if (self.type == _Enums.BGFlatLight)
+		{
+			self.data = new BGFlatLight.Data(self);
+		}
+		else if (self.type == _Enums.AdvancedShader)
+		{
+			self.data = new AdvancedShader.Data(self);
+		}
+		else if (self.type == _Enums.BigWaterWheel)
+		{
+			self.data = new BigWaterWheel.Data(self);
+		}
+		else if (self.type == _Enums.ColoredMudPit)
+		{
+			self.data = new ColoredMudPit.ColoredMudPitData(self);
+		}
+		else if (self.type == _Enums.GreenSparksDir)
+		{
+			self.data = new GreenSparksDir.Data(self);
+		}
+		else if (self.type == _Enums.ColoredLocalBlizzard)
+		{
+			self.data = new ColoredLocalBlizzard.Data(self);
+		}
+
 		orig(self);
 	}
 
@@ -410,31 +521,12 @@ public static class _Module
 	{
 		Custom.rainWorld.Shaders["ColorEffects"] = FShader.CreateShader("ColorEffects", AssetBundle.LoadFromFile(AssetManager.ResolveFilePath("assets/regionkit/coloreffects")).LoadAsset<Shader>("Assets/ColorEffects.shader"));
 		Custom.rainWorld.Shaders["WaterFallDepth"] = FShader.CreateShader("WaterFallDepth", AssetBundle.LoadFromFile(AssetManager.ResolveFilePath("assets/regionkit/waterfalldepth")).LoadAsset<Shader>("Assets/Shaders/WaterFallDepth.shader"));
-	}
-
-	private static readonly HashSet<string> DeprecatedObjects = ["SpinningFan", "PlacedWaterfall"];
-	private static void RemoveDeprecatedObjects(ILContext il)
-	{
-		// Prevents objects from being added to the pane without removing them from being registered to begin with because this is an easy solution I think
-		var c = new ILCursor(il);
-
-		try
-		{
-			Instruction brTo;
-			int loc = 5;
-			c.GotoNext(x => x.MatchCall<ObjectsPage>(nameof(ObjectsPage.DevObjectGetCategoryFromPlacedType)));
-			c.GotoNext(MoveType.AfterLabel, x => x.MatchLdloca(out _));
-			brTo = c.Next;
-			c.GotoPrev(x => x.MatchNewobj<PlacedObject.Type>());
-			c.GotoNext(MoveType.After, x => x.MatchStloc(out loc));
-			c.Emit(OpCodes.Ldloc, loc);
-			c.EmitDelegate((PlacedObject.Type tp) => DeprecatedObjects.Contains(tp.value));
-			c.Emit(OpCodes.Brtrue, brTo);
-		}
-		catch (Exception ex)
-		{
-			LogError("Objects RemoveDeprecatedObjects IL hook failed!");
-			LogError(ex);
-		}
+		AssetBundle bgFlatLightBundle = AssetBundle.LoadFromFile(AssetManager.ResolveFilePath("assets/regionkit/bgflatlight"));
+		Custom.rainWorld.Shaders["BGFlatLight"] = FShader.CreateShader("BGFlatLight", bgFlatLightBundle.LoadAsset<Shader>("Assets/Shaders/BGFlatLight.shader"));
+		Custom.rainWorld.Shaders["BGCloudLight"] = FShader.CreateShader("BGCloudLight", bgFlatLightBundle.LoadAsset<Shader>("Assets/Shaders/BGFlatLight.shader"), ["cloudlight"]);
+		Custom.rainWorld.Shaders["BGFlatLightAdditive"] = FShader.CreateShader("BGFlatLightAdditive", bgFlatLightBundle.LoadAsset<Shader>("Assets/Shaders/BGFlatLightAdditive.shader"));
+		Custom.rainWorld.Shaders["BGCloudLightAdditive"] = FShader.CreateShader("BGCloudLightAdditive", bgFlatLightBundle.LoadAsset<Shader>("Assets/Shaders/BGFlatLightAdditive.shader"), ["cloudlight"]);
+		Custom.rainWorld.Shaders["ASAxisHandleLine"] = FShader.CreateShader("ASAxisHandleLine", AssetBundle.LoadFromFile(AssetManager.ResolveFilePath("assets/regionkit/ASAxisHandleLine")).LoadAsset<Shader>("Assets/Shaders/ASAxisHandleLine.shader"));
+		Custom.rainWorld.Shaders["RKColoredLocalBlizzard"] = FShader.CreateShader("RKColoredLocalBlizzard", AssetBundle.LoadFromFile(AssetManager.ResolveFilePath("assets/regionkit/RKColoredLocalBlizzard")).LoadAsset<Shader>("Assets/Shaders/RKColoredLocalBlizzard.shader"));
 	}
 }

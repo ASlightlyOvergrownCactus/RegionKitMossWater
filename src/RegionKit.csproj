@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 	<!-- Project info -->
 	<PropertyGroup>
 		<LangVersion>13</LangVersion>
@@ -11,8 +11,8 @@
 		<Authors>RegionKit team</Authors>
 		<Description>All-in-one custom region dependency library.</Description>
 		<Copyright>GPL v3</Copyright>
-		<FileVersion>3.17.4</FileVersion>
-		<AssemblyVersion>3.17.4</AssemblyVersion>
+		<FileVersion>3.19.0</FileVersion>
+		<AssemblyVersion>3.19.0</AssemblyVersion>
 		<PackageReadmeFile>../README.md</PackageReadmeFile>
 		<PackageLicenseFile>../LICENSE</PackageLicenseFile>
 		<DebugType>Portable</DebugType>
@@ -20,13 +20,13 @@
     	<PathMap>$(AppOutputBase)=RegionKit\</PathMap>
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 		<OutputPath>../mod/newest/plugins</OutputPath>
+		<Nowarn>CS1591,CS0649,CS0169,IDE0028</Nowarn>
 	</PropertyGroup>
 	<!-- Debug configuration. Build for release. -->
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 		<TreatWarningsAsErrors>False</TreatWarningsAsErrors>
 		<WarningsAsErrors>$(WarningsAsErrors);NU1605;</WarningsAsErrors>
 		<DefineConstants>$(DefineConstants)TRACE;RK;REMIX</DefineConstants>
-		<Nowarn>1591</Nowarn>
 		<DebugSymbols>true</DebugSymbols>
 	</PropertyGroup>
 	<!-- Release configuration. Build for release. -->
@@ -34,7 +34,6 @@
 		<TreatWarningsAsErrors>False</TreatWarningsAsErrors>
 		<WarningsAsErrors>$(WarningsAsErrors);NU1605;</WarningsAsErrors>
 		<DefineConstants>$(DefineConstants)TRACE;RK;REMIX</DefineConstants>
-		<Nowarn>1591</Nowarn>
 		<DebugType>none</DebugType>
 	</PropertyGroup>
 	<!-- Exclude reference folder from project. -->
@@ -177,7 +176,7 @@
 		</Reference>
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="PolySharp" Version="1.8.3">
+		<PackageReference Include="PolySharp" Version="1.16.0">
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>

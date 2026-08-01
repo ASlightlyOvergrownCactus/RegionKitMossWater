@@ -1,7 +1,4 @@
-﻿using System.Drawing.Text;
-using DevInterface;
-using Mono.Cecil.Cil;
-using MonoMod.Cil;
+﻿using RegionKit.API;
 using static RegionKit.Modules.ConcealedGarden.CGCosmeticLeaves;
 using static RegionKit.Modules.ConcealedGarden.CGElectricArcs;
 using static RegionKit.Modules.ConcealedGarden.CGSlipperySlope;
@@ -101,7 +98,7 @@ internal static class _Module
 
 		RegisterFullyManagedObjectType(new ManagedField[]
 		{
-			new EnumField<Objects.Drawable.FContainer>("container", Objects.Drawable.FContainer.Foreground, displayName: "FContainer"),
+			new EnumField<ContainerCodes>("container", ContainerCodes.Foreground, displayName: "FContainer"),
 			new StringField("shader", "Basic", "Shader"),
 			new FloatField("alpha", 0f, 1f, 0f, 0.01f, ManagedFieldWithPanel.ControlType.slider, "amount")
 		}, typeof(CGCameraEffects.CGCameraEffectsObj), "CGFullScreenShader", CG_POM_CATEGORY);
@@ -114,8 +111,8 @@ internal static class _Module
 		CGNoLurkArea.Apply();
 		CGShelterRain.Apply();
 		CGCosmeticWater.Hooks.Apply();
-
-		IL.DevInterface.ObjectsPage.AssembleObjectPages += RemoveDeprecatedObjects;
+		DeprecatedItems.RegisterDeprecatedObject("CGBunkerShelterFlap");
+		DeprecatedItems.RegisterDeprecatedObject("CGCosmeticWater");
 	}
 
 	public static void Disable()
@@ -125,33 +122,5 @@ internal static class _Module
 		CGNoLurkArea.Undo();
 		CGShelterRain.Undo();
 		CGCosmeticWater.Hooks.Undo();
-
-		IL.DevInterface.ObjectsPage.AssembleObjectPages -= RemoveDeprecatedObjects;
-	}
-
-	private static readonly HashSet<string> DeprecatedObjects = ["CGCosmeticWater"];
-	private static void RemoveDeprecatedObjects(ILContext il)
-	{
-		// Prevents objects from being added to the pane without removing them from being registered to begin with because this is an easy solution I think
-		var c = new ILCursor(il);
-
-		try
-		{
-			Instruction brTo;
-			int loc = 5;
-			c.GotoNext(x => x.MatchCall<ObjectsPage>(nameof(ObjectsPage.DevObjectGetCategoryFromPlacedType)));
-			c.GotoNext(MoveType.AfterLabel, x => x.MatchLdloca(out _));
-			brTo = c.Next;
-			c.GotoPrev(x => x.MatchNewobj<PlacedObject.Type>());
-			c.GotoNext(MoveType.After, x => x.MatchStloc(out loc));
-			c.Emit(OpCodes.Ldloc, loc);
-			c.EmitDelegate((PlacedObject.Type tp) => DeprecatedObjects.Contains(tp.value));
-			c.Emit(OpCodes.Brtrue, brTo);
-		}
-		catch (Exception ex)
-		{
-			LogError("ConcealedGarden RemoveDeprecatedObjects IL hook failed!");
-			LogError(ex);
-		}
 	}
 }

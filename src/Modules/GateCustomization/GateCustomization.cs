@@ -477,7 +477,7 @@ internal static class GateCustomization
 
 			if (regionGateData.electricGateData.GetValue<bool>("batteryColorOverride"))// && (self.gate as ElectricGate).batteryLeft < 1.1f)
 			{
-				float num = (self.gate as ElectricGate).batteryChanging ? 1f : 0f;
+				float num = (self.gate as ElectricGate)!.batteryChanging ? 1f : 0f;
 
 				sLeaser.sprites[self.BatteryMeterSprite].color = Color.Lerp(
 					Custom.HSL2RGB(

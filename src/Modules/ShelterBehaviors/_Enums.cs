@@ -1,32 +1,41 @@
-namespace RegionKit.Modules.ShelterBehaviors;
+﻿namespace RegionKit.Modules.ShelterBehaviors;
 ///<inheritdoc/>
 public static class _Enums
 {
-	/// <summary>
-	/// Signleton POM object for customizing shelter behaviors. required in a room for others to work
-	/// </summary>
-	public static readonly PlacedObject.Type ShelterBhvrManager = new("ShelterBhvrManager", true);
+	// /// <summary>
+	// /// Signleton POM object for customizing shelter behaviors. required in a room for others to work
+	// /// </summary>
+	// public static readonly PlacedObject.Type ShelterBhvrManager = new("ShelterBhvrManager", true);
 	/// <summary>
 	/// An additional door
 	/// </summary>
-	public static readonly PlacedObject.Type ShelterBhvrPlacedDoor = new("ShelterBhvrPlacedDoor", true);
+	public static readonly PlacedObject.Type ShelterBhvrPlacedDoor = new(nameof(ShelterBhvrPlacedDoor), true);
 	/// <summary>
 	/// A zone where player can sleep
 	/// </summary>
-	public static readonly PlacedObject.Type ShelterBhvrTriggerZone = new("ShelterBhvrTriggerZone", true);
+	public static readonly PlacedObject.Type ShelterBhvrTriggerZone = new(nameof(ShelterBhvrTriggerZone), true);
 	/// <summary>
 	/// A zone where player can't sleep
 	/// </summary>
-	/// <returns></returns>
-	public static readonly PlacedObject.Type ShelterBhvrNoTriggerZone = new("ShelterBhvrNoTriggerZone", true);
+	public static readonly PlacedObject.Type ShelterBhvrNoTriggerZone = new(nameof(ShelterBhvrNoTriggerZone), true);
 	/// <summary>
 	/// Shows HoldToTrigger tutorial
 	/// </summary>
-	/// <returns></returns>
-	public static readonly PlacedObject.Type ShelterBhvrHTTTutorial = new("ShelterBhvrHTTTutorial", true);
+	public static readonly PlacedObject.Type ShelterBhvrHTTTutorial = new(nameof(ShelterBhvrHTTTutorial), true);
 	/// <summary>
 	/// An additional spawn position for the shelter
 	/// </summary>
-	/// <returns></returns>
-	public static readonly PlacedObject.Type ShelterBhvrSpawnPosition = new("ShelterBhvrSpawnPosition", true);
+	public static readonly PlacedObject.Type ShelterBhvrSpawnPosition = new(nameof(ShelterBhvrSpawnPosition), true);
+	/// <summary>
+	/// An additional spawn position for the shelter
+	/// </summary>
+	public static readonly PlacedObject.Type ShelterBhvrConsumableShelter = new(nameof(ShelterBhvrConsumableShelter), true);
+	/// <summary>
+	/// A shelter where holding is required to trigger
+	/// </summary>
+	public static readonly PlacedObject.Type ShelterBhvrHoldToTrigger = new(nameof(ShelterBhvrHoldToTrigger), true);
+	/// <summary>
+	/// Removes the vanilla door graphics
+	/// </summary>
+	public static readonly PlacedObject.Type ShelterBhvrDoorless = new(nameof(ShelterBhvrDoorless), true);
 }

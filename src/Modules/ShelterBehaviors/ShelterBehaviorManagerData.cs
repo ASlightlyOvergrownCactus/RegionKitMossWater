@@ -1,5 +1,5 @@
 namespace RegionKit.Modules.ShelterBehaviors;
-public class ShelterManagerData : ManagedData
+public class ShelterBehaviorManagerData : ManagedData
 {
 	//[BooleanField("nvd", true, displayName: "Hide Vanilla Door")]
 	[BackedByField("nvd")]
@@ -40,7 +40,7 @@ public class ShelterManagerData : ManagedData
 	//[BooleanField("ani", false, displayName: "Animate Water")]
 	[BackedByField("ani")]
 	public bool animateWater;
-	public ShelterManagerData(PlacedObject owner) : base(owner, new ManagedField[]
+	public ShelterBehaviorManagerData(PlacedObject owner) : base(owner, new ManagedField[]
 	{
 		new BooleanField("nvd", false, displayName:"No Vanilla Door"),
 		new BooleanField("htt", false, displayName:"Hold To Trigger"),

@@ -14,8 +14,9 @@ namespace RegionKit.Modules.Effects
 				new EffectDefinitionBuilder("RainSiren")
 					.AddStringField("songname", "Moon_Siren_MS", "Song Name")
 					.AddStringField("fadein", "1000", "Fade-In Time")
+					.AddBoolField("looping", true, "Loop")
 					.SetUADFactory((Room room, EffectExtraData data, bool firstTimeRealized) => new RainSirenUAD(data))
-					.SetCategory("RegionKit")
+					.SetCategory(_Enums.RegionKit_Gameplay.value)
 					.Register();
 				RainSiren.Setup();
 			}
@@ -30,6 +31,7 @@ namespace RegionKit.Modules.Effects
 		public EffectExtraData EffectData { get; }
 		public string songname;
 		public float fadein;
+		public bool looping;
 		string previousfadein = "1000.0";
 		public RainSiren siren;
 
@@ -37,6 +39,7 @@ namespace RegionKit.Modules.Effects
 		{
 			this.EffectData = effectData;
 			this.songname = effectData.GetString("songname");
+			this.looping = effectData.GetBool("looping");
 			this.siren = new RainSiren();
 		}
 		public override void Update(bool eu)
@@ -56,9 +59,9 @@ namespace RegionKit.Modules.Effects
 		public class RainSirenSong : Song
 		{
 			Player CurrentPlayer;
-			public RainSirenSong(MusicPlayer musicPlayer, Player player, string songname, float fadein) : base(musicPlayer, songname, MusicPlayer.MusicContext.StoryMode)
+			public RainSirenSong(MusicPlayer musicPlayer, Player player, string songname, float fadein, bool looping) : base(musicPlayer, songname, MusicPlayer.MusicContext.StoryMode)
 			{
-				Loop = true;
+				Loop = looping;
 				priority = 101f;
 				baseVolume = 0.33f;
 				stopAtGate = true;
@@ -86,8 +89,7 @@ namespace RegionKit.Modules.Effects
 			if (self.room == null) return;
 			ProcessManager? manager = self.room.world?.game?.manager;
 			MusicPlayer? musicPlayer = manager?.musicPlayer;
-			if (manager == null || musicPlayer == null) return;
-			if (musicPlayer.song is MSSirenSong) return;
+			if (manager == null || musicPlayer == null || musicPlayer.song is MSSirenSong) return;
 			RainSirenUAD? sirenUAD = self.room.updateList.OfType<RainSirenUAD>().FirstOrDefault<RainSirenUAD>();
 			string? songname = sirenUAD?.songname;
 
@@ -104,7 +106,7 @@ namespace RegionKit.Modules.Effects
 			if (!(manager.currentMainLoop is RainWorldGame rainWorldGame) || !rainWorldGame.IsStorySession) return;
 			if (!manager.rainWorld.setup.playMusic) return;
 			
-			Song mssiren = new RainSirenSong(musicPlayer, self, songname, sirenUAD.fadein);
+			Song mssiren = new RainSirenSong(musicPlayer, self, songname, sirenUAD.fadein, sirenUAD.looping);
 			if (musicPlayer.song == null)
 			{
 				musicPlayer.song = mssiren;

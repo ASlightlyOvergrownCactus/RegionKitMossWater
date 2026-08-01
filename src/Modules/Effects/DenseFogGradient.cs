@@ -18,7 +18,9 @@ public class DenseFogGradient : CosmeticSprite
 			// Sound volume
 			FloatRect roomRect = rm.RoomRect;
 			float volumeEffectAmount = rm.roomSettings.GetEffectAmount(_Enums.DenseFogSoundVolume);
-			float fogSoundVolume = (rm.roomSettings.GetEffect(_Enums.DenseFogSoundVolume) is null) ? intensity : volumeEffectAmount * ((float)rm.world.rainCycle.timer / rm.world.rainCycle.cycleLength);
+			float fogSoundVolume = (rm.roomSettings.GetEffect(_Enums.DenseFogSoundVolume) is null) ? intensity
+				: rm.world.rainCycle.preTimer > 0 ? volumeEffectAmount * rm.world.rainCycle.preTimer / rm.world.rainCycle.maxPreTimer
+				: volumeEffectAmount * rm.world.rainCycle.timer / rm.world.rainCycle.cycleLength;
 			float fogSoundVolume2 = Mathf.Max(0f, fogSoundVolume - .5f);
 
 			// Spooky sounds
@@ -30,6 +32,8 @@ public class DenseFogGradient : CosmeticSprite
 			//Debug.Log(s0.alpha);
 			//Debug.Log(fogSoundVolume);
 			//Debug.Log(room.world.rainCycle.timer);
+
+			if (rm.world.rainCycle.preTimer > 0) return; // Cannot be killed during precycle
 
 			// Danger + fog demon sound
 			if (rm.roomSettings.GetEffectAmount(_Enums.DenseFogSoundVolume) <= 0f)
@@ -80,8 +84,10 @@ public class DenseFogGradient : CosmeticSprite
 	
 	static float GetDenseFogIntensity(Room rm)
 	{
-		float effectAmount = rm.roomSettings.GetEffectAmount(_Enums.DenseFog),
-			cycleProgress = (float)rm.world.rainCycle.timer / rm.world.rainCycle.cycleLength;
+		float effectAmount = rm.roomSettings.GetEffectAmount(_Enums.DenseFog);
+		float cycleProgress = rm.world.rainCycle.preTimer > 0
+				? (float)rm.world.rainCycle.preTimer / rm.world.rainCycle.maxPreTimer
+				: (float)rm.world.rainCycle.timer / rm.world.rainCycle.cycleLength;
 		//Debug.Log(cycleProgress);
 		var intensity = Mathf.Exp((cycleProgress * 3f) - 3f);
 		intensity /= ((1f - effectAmount) * .3f) + 1;

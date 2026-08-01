@@ -11,8 +11,6 @@ internal static class Init
 		On.RoofTopView.ctor += RoofTopView_ctor;
 		On.AboveCloudsView.ctor += AboveCloudsView_ctor;
 		On.BackgroundScene.RoomToWorldPos += BackgroundScene_RoomToWorldPos;
-		On.AboveCloudsView.CloseCloud.DrawSprites += CloseCloud_DrawSprites;
-		On.AboveCloudsView.DistantCloud.DrawSprites += DistantCloud_DrawSprites;
 		On.AboveCloudsView.Update += AboveCloudsView_Update;
 		On.RoofTopView.Update += RoofTopView_Update;
 		On.Watcher.AncientUrbanView.ctor += AncientUrbanView_ctor;
@@ -26,8 +24,6 @@ internal static class Init
 		On.RoofTopView.ctor -= RoofTopView_ctor;
 		On.AboveCloudsView.ctor -= AboveCloudsView_ctor;
 		On.BackgroundScene.RoomToWorldPos -= BackgroundScene_RoomToWorldPos;
-		On.AboveCloudsView.CloseCloud.DrawSprites -= CloseCloud_DrawSprites;
-		On.AboveCloudsView.DistantCloud.DrawSprites -= DistantCloud_DrawSprites;
 		On.AboveCloudsView.Update -= AboveCloudsView_Update;
 		On.RoofTopView.Update -= RoofTopView_Update;
 		On.Watcher.AncientUrbanView.ctor -= AncientUrbanView_ctor;
@@ -42,8 +38,8 @@ internal static class Init
 		if (room.game == null) return;
 		Data.RoomBGData data = room.roomSettings.BackgroundData();
 
-		if (!data.sceneData.sceneInitialized && data.type != BackgroundTemplateType.None)
-			BackgroundPage.SwitchRoomBackground(room, data.type);
+		if (!data.sceneData.sceneInitialized && data.Type != BackgroundTemplateType.None)
+			SwitchRoomBackground(room, data.Type);
 	}
 
 	private static void RotWormScene_ctor(On.RotWormScene.orig_ctor orig, RotWormScene self, Room room)
@@ -51,8 +47,8 @@ internal static class Init
 		orig(self, room);
 		Data.RoomBGData data = self.room.roomSettings.BackgroundData();
 
-		if (data.type != BackgroundTemplateType.RotWormScene || data.sceneData is not Data.RotWormScene_SceneData)
-		{ data.backgroundName = ""; data.SetBGTypeAndData(BackgroundTemplateType.RotWormScene); }
+		if (data.Type != BackgroundTemplateType.RotWormScene)
+		{ data.backgroundName = ""; data.Type = BackgroundTemplateType.RotWormScene; }
 		data.LoadSceneData(self);
 		data.sceneData.MakeScene(self);
 	}
@@ -62,10 +58,11 @@ internal static class Init
 		orig(self, eu);
 
 		RainCycle rainCycle = self.room.world.rainCycle;
-		if ((self.room.game.cameras[0].effect_dayNight > 0f && rainCycle.timer >= rainCycle.cycleLength)
-			|| (ModManager.Expedition && self.room.game.rainWorld.ExpeditionMode))
+
+		if (self.room.roomSettings.BackgroundData().sceneData is Data.DayNightSceneData dayNightScene)
 		{
-			if (self.room.roomSettings.BackgroundData().sceneData is Data.DayNightSceneData dayNightScene)
+			if (dayNightScene.NeedColorUpdate || (self.room.game.cameras[0].effect_dayNight > 0f && rainCycle.timer >= rainCycle.cycleLength)
+			|| (ModManager.Expedition && self.room.game.rainWorld.ExpeditionMode))
 			{
 				dayNightScene.ColorUpdate();
 			}
@@ -76,20 +73,20 @@ internal static class Init
 	{
 		//ye I know this is a little hacky but it works and it's less annoying than using a bool or smthn
 		Vector2 roomOffset = room.roomSettings.BackgroundData().roomOffset;
-		Vector2 backgroundOffset = room.roomSettings.BackgroundData().backgroundOffset;
+		Vector2 backgroundOffset = room.roomSettings.BackgroundData().BackgroundOffset;
 
 		room.roomSettings.BackgroundData().roomOffset = new();
-		room.roomSettings.BackgroundData().backgroundOffset = new();
+		room.roomSettings.BackgroundData().BackgroundOffset = new();
 
 		orig(self, room, effect);
 
 		room.roomSettings.BackgroundData().roomOffset = roomOffset;
-		room.roomSettings.BackgroundData().backgroundOffset = backgroundOffset;
+		room.roomSettings.BackgroundData().BackgroundOffset = backgroundOffset;
 
 		Data.RoomBGData data = self.room.roomSettings.BackgroundData();
 
-		if (data.type != BackgroundTemplateType.AncientUrbanView || data.sceneData is not Data.AncientUrbanView_SceneData)
-		{ data.backgroundName = ""; data.SetBGTypeAndData(BackgroundTemplateType.AncientUrbanView); }
+		if (data.Type != BackgroundTemplateType.AncientUrbanView)
+		{ data.backgroundName = ""; data.Type = BackgroundTemplateType.AncientUrbanView; }
 		data.LoadSceneData(self);
 		data.sceneData.MakeScene(self);
 	}
@@ -99,10 +96,10 @@ internal static class Init
 		orig(self, eu);
 
 		RainCycle rainCycle = self.room.world.rainCycle;
-		if ((self.room.game.cameras[0].effect_dayNight > 0f && rainCycle.timer >= rainCycle.cycleLength)
-			|| (ModManager.Expedition && self.room.game.rainWorld.ExpeditionMode))
+		if (self.room.roomSettings.BackgroundData().sceneData is Data.DayNightSceneData dayNightScene)
 		{
-			if (self.room.roomSettings.BackgroundData().sceneData is Data.DayNightSceneData dayNightScene)
+			if (dayNightScene.NeedColorUpdate || (self.room.game.cameras[0].effect_dayNight > 0f && rainCycle.timer >= rainCycle.cycleLength)
+			|| (ModManager.Expedition && self.room.game.rainWorld.ExpeditionMode))
 			{
 				dayNightScene.ColorUpdate();
 			}
@@ -114,35 +111,21 @@ internal static class Init
 		orig(self, eu);
 
 		RainCycle rainCycle = self.room.world.rainCycle;
-		if ((self.room.game.cameras[0].effect_dayNight > 0f && rainCycle.timer >= rainCycle.cycleLength)
-			|| (ModManager.Expedition && self.room.game.rainWorld.ExpeditionMode))
+		if (self.room.roomSettings.BackgroundData().sceneData is Data.DayNightSceneData dayNightScene)
 		{
-			if (self.room.roomSettings.BackgroundData().sceneData is Data.DayNightSceneData dayNightScene)
+			if (dayNightScene.NeedColorUpdate || (self.room.game.cameras[0].effect_dayNight > 0f && rainCycle.timer >= rainCycle.cycleLength)
+			|| (ModManager.Expedition && self.room.game.rainWorld.ExpeditionMode))
 			{
 				dayNightScene.ColorUpdate();
 			}
 		}
 	}
 
-	private static void DistantCloud_DrawSprites(On.AboveCloudsView.DistantCloud.orig_DrawSprites orig, DistantCloud self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
-	{
-		//pixel fix
-		orig(self, sLeaser, rCam, timeStacker, camPos);
-		sLeaser.sprites[0].scaleY += 2f;
-	}
-
-	private static void CloseCloud_DrawSprites(On.AboveCloudsView.CloseCloud.orig_DrawSprites orig, CloseCloud self, RoomCamera.SpriteLeaser sLeaser, RoomCamera rCam, float timeStacker, Vector2 camPos)
-	{
-		//pixel fix
-		orig(self, sLeaser, rCam, timeStacker, camPos);
-		sLeaser.sprites[0].scaleY += 2f;
-	}
-
 	private static Vector2 BackgroundScene_RoomToWorldPos(On.BackgroundScene.orig_RoomToWorldPos orig, BackgroundScene self, Vector2 inRoomPos)
 	{
 		//offset
 		if (self.slatedForDeletetion) return Vector2.zero;
-		return orig(self, inRoomPos) + (self.room.roomSettings.BackgroundData().roomOffset * 20) + (self.room.roomSettings.BackgroundData().backgroundOffset * 20);
+		return orig(self, inRoomPos) + (self.room.roomSettings.BackgroundData().roomOffset * 20) + (self.room.roomSettings.BackgroundData().BackgroundOffset * 20);
 	}
 
 	private static void AboveCloudsView_ctor(On.AboveCloudsView.orig_ctor orig, AboveCloudsView self, Room room, RoomSettings.RoomEffect effect)
@@ -151,8 +134,8 @@ internal static class Init
 		Shader.SetGlobalFloat("_windDir", ModManager.MSC ? -1f : 1f);
 		Data.RoomBGData data = self.room.roomSettings.BackgroundData();
 
-		if (data.type != BackgroundTemplateType.AboveCloudsView || data.sceneData is not Data.AboveCloudsView_SceneData)
-		{ data.backgroundName = ""; data.SetBGTypeAndData(BackgroundTemplateType.AboveCloudsView); }
+		if (data.Type != BackgroundTemplateType.AboveCloudsView)
+		{ data.backgroundName = ""; data.Type = BackgroundTemplateType.AboveCloudsView; }
 		data.LoadSceneData(self);
 		data.sceneData.MakeScene(self);
 	}
@@ -161,21 +144,52 @@ internal static class Init
 	{
 		//ye I know this is a little hacky but it works and it's less annoying than using a bool or smthn
 		Vector2 roomOffset = room.roomSettings.BackgroundData().roomOffset;
-		Vector2 backgroundOffset = room.roomSettings.BackgroundData().backgroundOffset;
+		Vector2 backgroundOffset = room.roomSettings.BackgroundData().BackgroundOffset;
 
 		room.roomSettings.BackgroundData().roomOffset = new();
-		room.roomSettings.BackgroundData().backgroundOffset = new();
+		room.roomSettings.BackgroundData().BackgroundOffset = new();
 
 		orig(self, room, effect);
 
 		room.roomSettings.BackgroundData().roomOffset = roomOffset;
-		room.roomSettings.BackgroundData().backgroundOffset = backgroundOffset;
+		room.roomSettings.BackgroundData().BackgroundOffset = backgroundOffset;
 
 		Data.RoomBGData data = self.room.roomSettings.BackgroundData();
 
-		if (data.type != BackgroundTemplateType.RoofTopView || data.sceneData is not Data.RoofTopView_SceneData)
-		{ data.backgroundName = ""; data.SetBGTypeAndData(BackgroundTemplateType.RoofTopView); }
+		if (data.Type != BackgroundTemplateType.RoofTopView)
+		{ data.backgroundName = ""; data.Type = BackgroundTemplateType.RoofTopView; }
 		data.LoadSceneData(self);
 		data.sceneData.MakeScene(self);
+	}
+
+	public static void SwitchRoomBackground(Room self, BackgroundTemplateType type, bool refresh = false)
+	{
+		BackgroundScene? newBackground = null;
+		if (Registry.SceneMakerRegistry.TryGetValue(type, out Registry.SceneMaker sceneMaker))
+		{
+			newBackground = sceneMaker(self);
+		}
+		List<BackgroundScene> foundScenes = new();
+		BackgroundScene? lookingForScene = null;
+		foreach (UpdatableAndDeletable uad in self.updateList)
+		{
+			if (uad is BackgroundScene bgs)
+			{
+				if (newBackground != null && bgs.GetType() == newBackground.GetType() && !refresh)
+					lookingForScene = bgs;
+				else
+					foundScenes.Add(bgs);
+			}
+		}
+		foreach (var s in foundScenes)
+		{
+			s.Destroy();
+			self.RemoveObject(s);
+		}
+
+		if (lookingForScene == null)
+		{
+			self.AddObject(newBackground);
+		}
 	}
 }

@@ -4,6 +4,10 @@
 public class _Enums
 {
 	/// <summary>
+	/// Evil dangle fruit dialogue
+	/// </summary>
+	public static SLOracleBehaviorHasMark.MiscItemType EvilDangleFruitDialogue = new(nameof(EvilDangleFruitDialogue), true);
+	/// <summary>
 	/// LB Climbable wire
 	/// </summary>
 	public static PlacedObject.Type ClimbableWire = new(nameof(ClimbableWire), true);
@@ -64,4 +68,36 @@ public class _Enums
 	/// Prevents dropwigs from perching in a location
 	/// </summary>
 	public static PlacedObject.Type NoDropwigPerchZone = new(nameof(NoDropwigPerchZone), true);
+	/// <summary>
+	/// Evil dangle fruit
+	/// </summary>
+	public static PlacedObject.Type EvilDangleFruit = new(nameof(EvilDangleFruit), true);
+	/// <summary>
+	/// Background flat light
+	/// </summary>
+	public static PlacedObject.Type BGFlatLight = new(nameof(BGFlatLight), true);
+	/// <summary>
+	/// Shader thingy
+	/// </summary>
+	public static PlacedObject.Type AdvancedShader = new(nameof(AdvancedShader), true);
+	/// <summary>
+	/// Big water wheel
+	/// </summary>
+	public static PlacedObject.Type BigWaterWheel = new(nameof(BigWaterWheel), true);
+	/// <summary>
+	/// Customizable SSFuses
+	/// </summary>
+	public static PlacedObject.Type ColoredSSFuses = new(nameof(ColoredSSFuses), true);
+	/// <summary>
+	/// Customizable mud pit
+	/// </summary>
+	public static PlacedObject.Type ColoredMudPit = new(nameof(ColoredMudPit), true);
+	/// <summary>
+	/// Green sparks direction object
+	/// </summary>
+	public static PlacedObject.Type GreenSparksDir = new(nameof(GreenSparksDir), true);
+	/// <summary>
+	/// Colored local blizzard
+	/// </summary>
+	public static PlacedObject.Type ColoredLocalBlizzard = new(nameof(ColoredLocalBlizzard), true);
 }
